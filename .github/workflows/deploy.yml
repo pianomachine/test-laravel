@@ -2,7 +2,7 @@ name: cloud-run-laravel8-deploy
 on:
   push:
     branches:
-      - master
+      - newbranch
 jobs:
   setup-build-publish-deploy:
     name: Setup, Build, Publish, and Deploy
