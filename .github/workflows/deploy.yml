@@ -29,22 +29,30 @@ jobs:
         run: |
           gcloud auth configure-docker
 
+      # Convert secrets to lowercase
+      - name: Convert secrets to lowercase
+        run: |
+          export TEST_GCP_PROJECT_LOWER=$(echo "${{ secrets.TEST_GCP_PROJECT }}" | tr '[:upper:]' '[:lower:]')
+          export TEST_GCP_APPLICATION_LOWER=$(echo "${{ secrets.TEST_GCP_APPLICATION }}" | tr '[:upper:]' '[:lower:]')
+          echo "TEST_GCP_PROJECT_LOWER=$TEST_GCP_PROJECT_LOWER" >> $GITHUB_ENV
+          echo "TEST_GCP_APPLICATION_LOWER=$TEST_GCP_APPLICATION_LOWER" >> $GITHUB_ENV
+
       # Build the Docker image
       - name: Build
         run: |
-          gcloud config set project ${{ secrets.TEST_GCP_PROJECT }}
-          docker build -f docker/Dockerfile.prod -t asia.gcr.io/${{ secrets.TEST_GCP_PROJECT }}/${{ secrets.TEST_GCP_APPLICATION }} .
+          gcloud config set project "$TEST_GCP_PROJECT_LOWER"
+          docker build -f docker/Dockerfile.prod -t asia.gcr.io/$TEST_GCP_PROJECT_LOWER/$TEST_GCP_APPLICATION_LOWER .
 
       # Push the Docker image
       - name: Push
         run: |
-          docker push asia.gcr.io/${{ secrets.TEST_GCP_PROJECT }}/${{ secrets.TEST_GCP_APPLICATION }}
+          docker push asia.gcr.io/$TEST_GCP_PROJECT_LOWER/$TEST_GCP_APPLICATION_LOWER
 
       # Deploy the Docker image to the GKE cluster
       - name: Deploy
         run: |
-          gcloud run deploy ${{ secrets.TEST_GCP_APPLICATION }} \
-          --image asia.gcr.io/${{ secrets.TEST_GCP_PROJECT }}/${{ secrets.TEST_GCP_APPLICATION }} \
+          gcloud run deploy $TEST_GCP_APPLICATION_LOWER \
+          --image asia.gcr.io/$TEST_GCP_PROJECT_LOWER/$TEST_GCP_APPLICATION_LOWER \
           --region asia-east1 \
           --platform=managed \
           --add-cloudsql-instances ${{ secrets.TEST_SQL_CONNECTION_NAME }} \
