@@ -62,3 +62,5 @@ jobs:
           --platform=managed \
           --add-cloudsql-instances ${{ secrets.TEST_SQL_CONNECTION_NAME }} \
           --allow-unauthenticated
+
+
