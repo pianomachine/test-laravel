@@ -11,25 +11,30 @@ jobs:
       - name: Checkout
         uses: actions/checkout@master
 
-      # Setup gcloud CLI
+      # gcloud CLI のセットアップ
       - uses: google-github-actions/setup-gcloud@v0.5.0
         with:
           service_account_email: ${{ secrets.TEST_GCP_EMAIL }}
           service_account_key: ${{ secrets.TEST_GCP_CREDENTIALS }}
           export_default_credentials: true
 
-      # Decode and put .env file
-      # https://casualdevelopers.com/tech-tips/how-to-use-dotenv-with-base64-on-circleci/
+      # 必要なAPIを有効化
+      - name: Enable APIs
+        run: |
+          gcloud services enable sqladmin.googleapis.com \
+          --project "$TEST_GCP_PROJECT_LOWER"
+
+      # .envファイルをデコード
       - name: Decode .env file
         run: |
           echo ${{ secrets.TEST_ENV_FILE }} | base64 --decode > src/.env
 
-      # Configure Docker with Credentials
+      # Dockerの認証を設定
       - name: Configure Docker
         run: |
           gcloud auth configure-docker
 
-      # Convert secrets to lowercase
+      # シークレットを小文字に変換
       - name: Convert secrets to lowercase
         run: |
           export TEST_GCP_PROJECT_LOWER=$(echo "${{ secrets.TEST_GCP_PROJECT }}" | tr '[:upper:]' '[:lower:]')
@@ -37,18 +42,18 @@ jobs:
           echo "TEST_GCP_PROJECT_LOWER=$TEST_GCP_PROJECT_LOWER" >> $GITHUB_ENV
           echo "TEST_GCP_APPLICATION_LOWER=$TEST_GCP_APPLICATION_LOWER" >> $GITHUB_ENV
 
-      # Build the Docker image
+      # Dockerイメージをビルド
       - name: Build
         run: |
           gcloud config set project "$TEST_GCP_PROJECT_LOWER"
           docker build -f docker/Dockerfile.prod -t asia.gcr.io/$TEST_GCP_PROJECT_LOWER/$TEST_GCP_APPLICATION_LOWER .
 
-      # Push the Docker image
+      # Dockerイメージをプッシュ
       - name: Push
         run: |
           docker push asia.gcr.io/$TEST_GCP_PROJECT_LOWER/$TEST_GCP_APPLICATION_LOWER
 
-      # Deploy the Docker image to the GKE cluster
+      # GKEクラスタにDockerイメージをデプロイ
       - name: Deploy
         run: |
           gcloud run deploy $TEST_GCP_APPLICATION_LOWER \
