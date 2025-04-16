@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - newbranch
+
 jobs:
   setup-build-publish-deploy:
     name: Setup, Build, Publish, and Deploy
@@ -17,6 +18,14 @@ jobs:
           service_account_email: ${{ secrets.TEST_GCP_EMAIL }}
           service_account_key: ${{ secrets.TEST_GCP_CREDENTIALS }}
           export_default_credentials: true
+
+      # TEST_GCP_PROJECT シークレットが空でないことを検証
+      - name: Validate TEST_GCP_PROJECT
+        run: |
+          if [ -z "${{ secrets.TEST_GCP_PROJECT }}" ]; then
+            echo "Error: TEST_GCP_PROJECT secret is not set or empty."
+            exit 1
+          fi
 
       # 必要なAPIを有効化
       - name: Enable APIs
@@ -42,6 +51,11 @@ jobs:
           echo "TEST_GCP_PROJECT_LOWER=$TEST_GCP_PROJECT_LOWER" >> $GITHUB_ENV
           echo "TEST_GCP_APPLICATION_LOWER=$TEST_GCP_APPLICATION_LOWER" >> $GITHUB_ENV
 
+      # デバッグ用のログ出力
+      - name: Debugging TEST_GCP_PROJECT_LOWER
+        run: |
+          echo "TEST_GCP_PROJECT_LOWER=${TEST_GCP_PROJECT_LOWER}"
+
       # Dockerイメージをビルド
       - name: Build
         run: |
@@ -62,6 +76,3 @@ jobs:
           --platform=managed \
           --add-cloudsql-instances ${{ secrets.TEST_SQL_CONNECTION_NAME }} \
           --allow-unauthenticated
-
-
-
