@@ -6,6 +6,10 @@ FROM php:8.0-apache
 COPY docker/php.ini /usr/local/etc/php/
 RUN apt update
 RUN apt install -y git
+# ⭐ Node.js & npm を追加
+RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
+  && apt install -y nodejs
+
 RUN apt install -y vim
 RUN apt install -y zip unzip
 RUN docker-php-ext-install bcmath pdo_mysql
