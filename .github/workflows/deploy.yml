@@ -19,6 +19,14 @@ jobs:
           service_account_key: ${{ secrets.TEST_GCP_CREDENTIALS }}
           export_default_credentials: true
 
+      # シークレットを小文字に変換（早期に実行）
+      - name: Convert secrets to lowercase
+        run: |
+          export TEST_GCP_PROJECT_LOWER=$(echo "${{ secrets.TEST_GCP_PROJECT }}" | tr '[:upper:]' '[:lower:]')
+          export TEST_GCP_APPLICATION_LOWER=$(echo "${{ secrets.TEST_GCP_APPLICATION }}" | tr '[:upper:]' '[:lower:]')
+          echo "TEST_GCP_PROJECT_LOWER=$TEST_GCP_PROJECT_LOWER" >> $GITHUB_ENV
+          echo "TEST_GCP_APPLICATION_LOWER=$TEST_GCP_APPLICATION_LOWER" >> $GITHUB_ENV
+
       # TEST_GCP_PROJECT シークレットが空でないことを検証
       - name: Validate TEST_GCP_PROJECT
         run: |
@@ -30,8 +38,7 @@ jobs:
       # 必要なAPIを有効化
       - name: Enable APIs
         run: |
-          gcloud services enable sqladmin.googleapis.com \
-          --project "$TEST_GCP_PROJECT_LOWER"
+          gcloud services enable sqladmin.googleapis.com --project "$TEST_GCP_PROJECT_LOWER"
 
       # .envファイルをデコード
       - name: Decode .env file
@@ -42,14 +49,6 @@ jobs:
       - name: Configure Docker
         run: |
           gcloud auth configure-docker
-
-      # シークレットを小文字に変換
-      - name: Convert secrets to lowercase
-        run: |
-          export TEST_GCP_PROJECT_LOWER=$(echo "${{ secrets.TEST_GCP_PROJECT }}" | tr '[:upper:]' '[:lower:]')
-          export TEST_GCP_APPLICATION_LOWER=$(echo "${{ secrets.TEST_GCP_APPLICATION }}" | tr '[:upper:]' '[:lower:]')
-          echo "TEST_GCP_PROJECT_LOWER=$TEST_GCP_PROJECT_LOWER" >> $GITHUB_ENV
-          echo "TEST_GCP_APPLICATION_LOWER=$TEST_GCP_APPLICATION_LOWER" >> $GITHUB_ENV
 
       # デバッグ用のログ出力
       - name: Debugging TEST_GCP_PROJECT_LOWER
@@ -71,8 +70,8 @@ jobs:
       - name: Deploy
         run: |
           gcloud run deploy $TEST_GCP_APPLICATION_LOWER \
-          --image asia.gcr.io/$TEST_GCP_PROJECT_LOWER/$TEST_GCP_APPLICATION_LOWER \
-          --region asia-east1 \
-          --platform=managed \
-          --add-cloudsql-instances ${{ secrets.TEST_SQL_CONNECTION_NAME }} \
-          --allow-unauthenticated
+            --image asia.gcr.io/$TEST_GCP_PROJECT_LOWER/$TEST_GCP_APPLICATION_LOWER \
+            --region asia-east1 \
+            --platform=managed \
+            --add-cloudsql-instances ${{ secrets.TEST_SQL_CONNECTION_NAME }} \
+            --allow-unauthenticated
